@@ -5,6 +5,9 @@
 Escriba el codigo que ejecute la accion solicitada en cada pregunta.
 """
 
+import os
+import pandas as pd
+import zipfile
 
 def pregunta_01():
     """
@@ -69,5 +72,32 @@ def pregunta_01():
     |  4 | Tampere Science Parks is a Finnish company that owns , leases and builds office properties and it specialises in facilities for technology-oriented businesses         | neutral  |
     ```
 
-
     """
+    base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+    input_dir = os.path.join(base_dir, 'input')
+    output_dir = os.path.join(base_dir, 'files', 'output')
+    os.makedirs(output_dir, exist_ok=True)
+
+    zip_path = os.path.join(base_dir, 'files', 'input.zip')
+    if not os.path.exists(input_dir):
+        with zipfile.ZipFile(zip_path, 'r') as zip_ref:
+            zip_ref.extractall(base_dir)
+
+    def recolectar_datos(subdir):
+        datos = []
+        for sentimiento in ['positive', 'negative', 'neutral']:
+            carpeta = os.path.join(input_dir, subdir, sentimiento)
+            if not os.path.exists(carpeta):
+                continue
+            for archivo in os.listdir(carpeta):
+                if archivo.endswith('.txt'):
+                    ruta = os.path.join(carpeta, archivo)
+                    with open(ruta, encoding='utf-8') as f:
+                        frase = f.read().strip()
+                        datos.append({'phrase': frase, 'target': sentimiento})
+        return datos
+
+    for split in ['train', 'test']:
+        datos = recolectar_datos(split)
+        df = pd.DataFrame(datos)
+        df.to_csv(os.path.join(output_dir, f'{split}_dataset.csv'), index=False)
